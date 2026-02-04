@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Video.js 8.x Player Test</title>
+
+    <!-- Video.js 8.x -->
+    <link href="https://vjs.zencdn.net/8.23.6/video-js.min.css" rel="stylesheet">
+
+    <!-- Mobile UI 플러그인 -->
+    <link href="https://cdn.jsdelivr.net/npm/videojs-mobile-ui/dist/videojs-mobile-ui.css" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 8px;
+            color: #00d4ff;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: #e94560;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        /* 플레이어 영역 */
+        .player-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .video-js {
+            width: 100%;
+            height: 450px;
+        }
+
+        /* 컨트롤 패널 */
+        .control-panel {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .control-section {
+            margin-bottom: 15px;
+        }
+
+        .control-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-section h3 {
+            color: #00d4ff;
+            margin-bottom: 12px;
+            font-size: 15px;
+            border-bottom: 1px solid #0f3460;
+            padding-bottom: 6px;
+        }
+
+        /* 배속 버튼 */
+        .speed-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .speed-btn {
+            padding: 8px 16px;
+            border: 2px solid #0f3460;
+            background: transparent;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .speed-btn:hover {
+            background: #0f3460;
+        }
+
+        .speed-btn.active {
+            background: #00d4ff;
+            border-color: #00d4ff;
+            color: #000;
+        }
+
+        /* 상태 표시 */
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            padding: 12px;
+            background: #0f3460;
+            border-radius: 6px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-label {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .status-value {
+            color: #00d4ff;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        /* 입력 소스 */
+        .source-input {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .source-input input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 2px solid #0f3460;
+            background: #0f0f23;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .source-input button {
+            padding: 10px 16px;
+            background: #00d4ff;
+            border: none;
+            color: #000;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .sample-sources {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .sample-btn {
+            padding: 5px 10px;
+            background: #0f3460;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .sample-btn:hover {
+            background: #16213e;
+        }
+
+        /* 로그 영역 */
+        .log-section {
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .log-section h3 {
+            color: #00d4ff;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .log-content {
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .log-item {
+            padding: 2px 0;
+            border-bottom: 1px solid #1a1a2e;
+        }
+
+        .log-item.info { color: #4caf50; }
+        .log-item.speed { color: #00d4ff; }
+        .log-item.seeking { color: #ffc107; }
+        .log-item.blocked { color: #e94560; }
+
+        /* 정보 박스 */
+        .info-box {
+            background: #0f3460;
+            border-left: 4px solid #00d4ff;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 0 6px 6px 0;
+            font-size: 13px;
+        }
+
+        .info-box ul {
+            margin: 8px 0 0 20px;
+        }
+
+        .info-box li {
+            margin: 4px 0;
+            color: #ccc;
+        }
+
+        /* 모바일 대응 */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            .video-js {
+                height: 220px;
+            }
+
+            .speed-buttons {
+                justify-content: center;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .source-input {
+                flex-direction: column;
+            }
+
+            .source-input button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Video.js 8.x Test <span class="version-badge">v8.23.6</span></h1>
+        <p class="subtitle">Mobile UI 플러그인 + 전체화면 테스트 <span style="color:#00d4ff;">v2.0.0</span></p>
+
+        <!-- 비디오 소스 입력 -->
+        <div class="control-panel">
+            <div class="control-section">
+                <h3>비디오 소스</h3>
+                <div class="sample-sources">
+                    <button class="sample-btn" onclick="loadSample('hls')">샘플 HLS</button>
+                    <button class="sample-btn" onclick="loadSample('mp4')">샘플 MP4</button>
+                </div>
+                <div class="source-input">
+                    <input type="text" id="videoSource" placeholder="HLS URL (m3u8) 또는 MP4 URL 입력">
+                    <button onclick="loadVideo()">로드</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 플레이어 -->
+        <div class="player-wrapper" id="playerWrapper">
+            <video id="my-player" class="video-js vjs-big-play-centered">
+                <p class="vjs-no-js">JavaScript를 활성화해주세요.</p>
+            </video>
+        </div>
+
+        <!-- 상태 표시 -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-label">현재:</span>
+                <span class="status-value" id="currentTime">0:00</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">전체:</span>
+                <span class="status-value" id="duration">0:00</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">배속:</span>
+                <span class="status-value" id="currentSpeed">1.0x</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">기기:</span>
+                <span class="status-value" id="deviceType">-</span>
+            </div>
+        </div>
+
+        <!-- 컨트롤 패널 -->
+        <div class="control-panel">
+            <!-- 배속 설정 -->
+            <div class="control-section">
+                <h3>배속 설정</h3>
+                <div class="speed-buttons">
+                    <button class="speed-btn" data-speed="0.5">0.5x</button>
+                    <button class="speed-btn" data-speed="0.75">0.75x</button>
+                    <button class="speed-btn active" data-speed="1">1.0x</button>
+                    <button class="speed-btn" data-speed="1.2">1.2x</button>
+                    <button class="speed-btn" data-speed="1.5">1.5x</button>
+                    <button class="speed-btn" data-speed="2">2.0x</button>
+                </div>
+            </div>
+
+            <!-- 전체화면 -->
+            <div class="control-section">
+                <h3>전체화면 테스트</h3>
+                <div class="speed-buttons">
+                    <button class="speed-btn" onclick="player.requestFullscreen()" style="background:#4caf50; border-color:#4caf50;">
+                        Video.js 전체화면
+                    </button>
+                    <button class="speed-btn" onclick="enterNativeFullscreen()" style="background:#e94560; border-color:#e94560;">
+                        네이티브 전체화면
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 정보 박스 -->
+        <div class="info-box">
+            <strong>Video.js 8.x + Mobile UI 플러그인 특징:</strong>
+            <ul>
+                <li>화면 회전 시 자동 전체화면 진입/종료</li>
+                <li>터치로 재생/일시정지</li>
+                <li>좌우 스와이프로 탐색</li>
+                <li>더블탭으로 10초 앞/뒤로</li>
+            </ul>
+        </div>
+
+        <!-- 로그 -->
+        <div class="log-section">
+            <h3>이벤트 로그</h3>
+            <div class="log-content" id="logContent"></div>
+        </div>
+    </div>
+
+    <!-- Video.js 8.x -->
+    <script src="https://vjs.zencdn.net/8.23.6/video.min.js"></script>
+
+    <!-- Mobile UI 플러그인 -->
+    <script src="https://cdn.jsdelivr.net/npm/videojs-mobile-ui/dist/videojs-mobile-ui.min.js"></script>
+
+    <script>
+        // ========================================
+        // 변수
+        // ========================================
+        var player = null;
+        var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        var isAndroid = /Android/i.test(navigator.userAgent);
+
+        var sampleVideos = {
+            hls: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+            mp4: 'https://www.w3schools.com/html/mov_bbb.mp4'
+        };
+
+        // ========================================
+        // 플레이어 초기화
+        // ========================================
+        function initPlayer() {
+            player = videojs('my-player', {
+                controls: true,
+                autoplay: false,
+                preload: 'auto',
+                fluid: true,
+                responsive: true,
+                playbackRates: [0.5, 0.75, 1, 1.2, 1.5, 2],
+                controlBar: {
+                    children: [
+                        'playToggle',
+                        'volumePanel',
+                        'currentTimeDisplay',
+                        'timeDivider',
+                        'durationDisplay',
+                        'progressControl',
+                        'playbackRateMenuButton',
+                        'fullscreenToggle'
+                    ]
+                },
+                userActions: {
+                    doubleClick: true
+                }
+            });
+
+            // Mobile UI 플러그인 활성화
+            if (typeof player.mobileUi === 'function') {
+                player.mobileUi({
+                    fullscreen: {
+                        enterOnRotate: true,      // 가로 회전 시 전체화면
+                        exitOnRotate: true,       // 세로 회전 시 전체화면 종료
+                        lockOnRotate: true,       // 가로 회전 시 잠금
+                        lockToLandscapeOnEnter: false  // 전체화면 시 가로 강제 (필요시 true)
+                    },
+                    touchControls: {
+                        seekSeconds: 10,          // 더블탭 탐색 초
+                        tapTimeout: 300,          // 탭 타임아웃
+                        disableOnEnd: false
+                    }
+                });
+                addLog('Mobile UI 플러그인 활성화됨', 'info');
+            } else {
+                addLog('Mobile UI 플러그인 로드 실패', 'blocked');
+            }
+
+            // 이벤트 리스너
+            player.on('loadedmetadata', function() {
+                updateStatus();
+                addLog('메타데이터 로드 - 길이: ' + formatTime(player.duration()), 'info');
+            });
+
+            player.on('timeupdate', updateStatus);
+
+            player.on('ratechange', function() {
+                var rate = player.playbackRate();
+                updateSpeedButtons(rate);
+                addLog('배속 변경: ' + rate + 'x', 'speed');
+            });
+
+            player.on('fullscreenchange', function() {
+                var isFs = player.isFullscreen();
+                addLog('전체화면: ' + (isFs ? '진입' : '종료'), 'info');
+            });
+
+            player.on('play', function() { addLog('재생 시작', 'info'); });
+            player.on('pause', function() { addLog('일시 정지', 'info'); });
+            player.on('ended', function() { addLog('재생 완료', 'info'); });
+            player.on('error', function() {
+                var err = player.error();
+                addLog('에러: ' + (err ? err.message : 'unknown'), 'blocked');
+            });
+
+            // 기기 타입 표시
+            var deviceType = isIOS ? 'iOS' : (isAndroid ? 'Android' : 'Desktop');
+            document.getElementById('deviceType').textContent = deviceType;
+
+            addLog('Video.js 8.23.6 초기화 완료 [' + deviceType + ']', 'info');
+        }
+
+        // ========================================
+        // 비디오 로드
+        // ========================================
+        function loadVideo() {
+            var url = document.getElementById('videoSource').value.trim();
+            if (!url) {
+                addLog('URL을 입력해주세요', 'blocked');
+                return;
+            }
+
+            var type = url.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4';
+            player.src({ src: url, type: type });
+            addLog('비디오 로드: ' + url.substring(0, 50) + '...', 'info');
+        }
+
+        function loadSample(type) {
+            document.getElementById('videoSource').value = sampleVideos[type] || '';
+            loadVideo();
+        }
+
+        // ========================================
+        // 전체화면
+        // ========================================
+        function enterNativeFullscreen() {
+            var videoEl = player.tech().el();
+            var wrapper = document.getElementById('playerWrapper');
+
+            addLog('네이티브 전체화면 시도...', 'seeking');
+
+            // iOS
+            if (videoEl.webkitEnterFullscreen) {
+                try {
+                    videoEl.webkitEnterFullscreen();
+                    addLog('iOS webkitEnterFullscreen 호출', 'info');
+                    return;
+                } catch(e) {
+                    addLog('iOS 전체화면 실패: ' + e.message, 'blocked');
+                }
+            }
+
+            // 표준 API
+            var elem = wrapper;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().then(function() {
+                    addLog('requestFullscreen 성공', 'info');
+                }).catch(function(e) {
+                    addLog('requestFullscreen 실패: ' + e.message, 'blocked');
+                });
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+                addLog('webkitRequestFullscreen 호출', 'info');
+            } else {
+                addLog('Fullscreen API 미지원', 'blocked');
+            }
+        }
+
+        // ========================================
+        // 배속
+        // ========================================
+        function updateSpeedButtons(rate) {
+            document.querySelectorAll('.speed-btn[data-speed]').forEach(function(btn) {
+                btn.classList.remove('active');
+                if (parseFloat(btn.dataset.speed) === rate) {
+                    btn.classList.add('active');
+                }
+            });
+            document.getElementById('currentSpeed').textContent = rate + 'x';
+        }
+
+        document.querySelectorAll('.speed-btn[data-speed]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var speed = parseFloat(this.dataset.speed);
+                if (player) player.playbackRate(speed);
+            });
+        });
+
+        // ========================================
+        // 유틸리티
+        // ========================================
+        function formatTime(seconds) {
+            if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
+            var mins = Math.floor(seconds / 60);
+            var secs = Math.floor(seconds % 60);
+            return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+
+        function updateStatus() {
+            if (!player) return;
+            document.getElementById('currentTime').textContent = formatTime(player.currentTime());
+            document.getElementById('duration').textContent = formatTime(player.duration());
+        }
+
+        function addLog(message, type) {
+            var logContent = document.getElementById('logContent');
+            var time = new Date().toLocaleTimeString();
+            var item = document.createElement('div');
+            item.className = 'log-item ' + (type || '');
+            item.textContent = '[' + time + '] ' + message;
+            logContent.insertBefore(item, logContent.firstChild);
+            while (logContent.children.length > 30) {
+                logContent.removeChild(logContent.lastChild);
+            }
+        }
+
+        // ========================================
+        // 초기화
+        // ========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initPlayer();
+            document.getElementById('videoSource').value = sampleVideos.hls;
+        });
+    </script>
+</body>
+</html>

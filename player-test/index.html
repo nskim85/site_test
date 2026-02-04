@@ -328,12 +328,50 @@
                 gap: 10px;
             }
         }
+
+        /* CSS 기반 가상 전체화면 */
+        .fake-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
+            background: #000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+        }
+
+        .fake-fullscreen .video-js {
+            width: 100vw !important;
+            height: 100vh !important;
+        }
+
+        /* 가상 전체화면 종료 버튼 */
+        .fake-fullscreen-exit {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 100000;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .fake-fullscreen-exit:hover {
+            background: rgba(255,255,255,0.2);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎬 Video.js Player Test</h1>
-        <p class="subtitle">Seeking 제한 + 배속 기능 테스트 환경 <span style="color:#00d4ff;">v1.1.0</span></p>
+        <p class="subtitle">Seeking 제한 + 배속 기능 테스트 환경 <span style="color:#00d4ff;">v1.2.0</span></p>
 
         <!-- 비디오 소스 입력 -->
         <div class="control-panel" style="margin-bottom: 20px;">
@@ -498,13 +536,51 @@
             // 모바일 전체화면 지원
             var videoEl = player.tech().el();
             var playerContainer = document.querySelector('.player-wrapper');
+            var isFakeFullscreen = false;
+
+            // 가상 전체화면 진입
+            function enterFakeFullscreen() {
+                playerContainer.classList.add('fake-fullscreen');
+
+                // 종료 버튼 추가
+                var exitBtn = document.createElement('button');
+                exitBtn.className = 'fake-fullscreen-exit';
+                exitBtn.id = 'fakeFullscreenExit';
+                exitBtn.textContent = '✖ 전체화면 종료';
+                exitBtn.onclick = exitFakeFullscreen;
+                playerContainer.appendChild(exitBtn);
+
+                isFakeFullscreen = true;
+                addLog('CSS 가상 전체화면 진입', 'info');
+
+                // 화면 방향 가로 고정 시도 (지원되는 경우)
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(function(e) {
+                        // 무시 - 지원 안 될 수 있음
+                    });
+                }
+            }
+
+            // 가상 전체화면 종료
+            function exitFakeFullscreen() {
+                playerContainer.classList.remove('fake-fullscreen');
+                var exitBtn = document.getElementById('fakeFullscreenExit');
+                if (exitBtn) exitBtn.remove();
+                isFakeFullscreen = false;
+                addLog('CSS 가상 전체화면 종료', 'info');
+
+                // 화면 방향 해제
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            }
 
             // 커스텀 전체화면 함수 (iOS/Android 모두 지원)
             window.enterMobileFullscreen = function() {
                 addLog('전체화면 시도...', 'info');
 
                 // 1. iOS 네이티브 비디오 전체화면
-                if (videoEl.webkitEnterFullscreen) {
+                if (isIOS && videoEl.webkitEnterFullscreen) {
                     try {
                         videoEl.webkitEnterFullscreen();
                         addLog('iOS webkitEnterFullscreen 성공', 'info');
@@ -516,11 +592,15 @@
 
                 // 2. 표준 Fullscreen API (Android Chrome 등)
                 var elem = playerContainer || videoEl;
+                var fullscreenSupported = elem.requestFullscreen || elem.webkitRequestFullscreen ||
+                                          elem.mozRequestFullScreen || elem.msRequestFullscreen;
+
                 if (elem.requestFullscreen) {
                     elem.requestFullscreen().then(function() {
                         addLog('requestFullscreen 성공', 'info');
                     }).catch(function(e) {
-                        addLog('requestFullscreen 실패: ' + e.message, 'blocked');
+                        addLog('requestFullscreen 실패: ' + e.message + ' → CSS 전체화면 사용', 'seeking');
+                        enterFakeFullscreen();
                     });
                 } else if (elem.webkitRequestFullscreen) {
                     elem.webkitRequestFullscreen();
@@ -532,12 +612,21 @@
                     elem.msRequestFullscreen();
                     addLog('msRequestFullscreen 호출', 'info');
                 } else {
-                    addLog('전체화면 API 미지원', 'blocked');
+                    // Fullscreen API 미지원 → CSS 가상 전체화면 사용
+                    addLog('Fullscreen API 미지원 → CSS 전체화면 사용', 'seeking');
+                    enterFakeFullscreen();
                 }
             };
 
             // 전체화면 종료 함수
             window.exitMobileFullscreen = function() {
+                // 가상 전체화면인 경우
+                if (isFakeFullscreen) {
+                    exitFakeFullscreen();
+                    return;
+                }
+
+                // 네이티브 전체화면 종료
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
                 } else if (document.webkitExitFullscreen) {

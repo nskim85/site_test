@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video.js Player Test - Seeking & 배속</title>
+
+    <!-- Video.js 7.x CDN (프로젝트와 동일 버전) -->
+    <link href="https://vjs.zencdn.net/7.8.2/video-js.css" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #00d4ff;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        /* 플레이어 영역 */
+        .player-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .video-js {
+            width: 100%;
+            height: 450px;
+        }
+
+        /* 컨트롤 패널 */
+        .control-panel {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .control-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 1px solid #0f3460;
+            padding-bottom: 8px;
+        }
+
+        /* 배속 버튼 */
+        .speed-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .speed-btn {
+            padding: 10px 20px;
+            border: 2px solid #0f3460;
+            background: transparent;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .speed-btn:hover {
+            background: #0f3460;
+        }
+
+        .speed-btn.active {
+            background: #00d4ff;
+            border-color: #00d4ff;
+            color: #000;
+        }
+
+        /* Seeking 테스트 */
+        .seek-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .seek-btn {
+            padding: 10px 15px;
+            background: #e94560;
+            border: none;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .seek-btn:hover {
+            background: #ff6b6b;
+        }
+
+        .seek-btn.allow {
+            background: #4caf50;
+        }
+
+        .seek-btn.allow:hover {
+            background: #66bb6a;
+        }
+
+        /* 토글 스위치 */
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e94560;
+            transition: 0.4s;
+            border-radius: 30px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #4caf50;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+
+        .toggle-label {
+            font-size: 14px;
+        }
+
+        /* 로그 영역 */
+        .log-section {
+            background: #0f0f23;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .log-section h3 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .log-content {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .log-item {
+            padding: 3px 0;
+            border-bottom: 1px solid #1a1a2e;
+        }
+
+        .log-item.seeking {
+            color: #ffc107;
+        }
+
+        .log-item.blocked {
+            color: #e94560;
+        }
+
+        .log-item.speed {
+            color: #00d4ff;
+        }
+
+        .log-item.info {
+            color: #4caf50;
+        }
+
+        /* 상태 표시 */
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 6px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-label {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .status-value {
+            color: #00d4ff;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* 입력 소스 */
+        .source-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .source-input input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #0f3460;
+            background: #0f0f23;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .source-input button {
+            padding: 10px 20px;
+            background: #00d4ff;
+            border: none;
+            color: #000;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .sample-sources {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .sample-btn {
+            padding: 6px 12px;
+            background: #0f3460;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .sample-btn:hover {
+            background: #16213e;
+        }
+
+        /* 모바일 대응 */
+        @media (max-width: 600px) {
+            .video-js {
+                height: 250px;
+            }
+
+            .speed-buttons {
+                justify-content: center;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Video.js Player Test</h1>
+        <p class="subtitle">Seeking 제한 + 배속 기능 테스트 환경</p>
+
+        <!-- 비디오 소스 입력 -->
+        <div class="control-panel" style="margin-bottom: 20px;">
+            <div class="control-section">
+                <h3>📹 비디오 소스</h3>
+                <div class="sample-sources">
+                    <button class="sample-btn" onclick="loadSample('hls')">샘플 HLS</button>
+                    <button class="sample-btn" onclick="loadSample('mp4')">샘플 MP4</button>
+                    <button class="sample-btn" onclick="loadSample('project')">프로젝트 HLS</button>
+                </div>
+                <div class="source-input">
+                    <input type="text" id="videoSource" placeholder="HLS URL (m3u8) 또는 MP4 URL 입력">
+                    <button onclick="loadVideo()">로드</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 플레이어 -->
+        <div class="player-wrapper">
+            <video id="my-player" class="video-js vjs-big-play-centered vjs-fluid">
+                <p class="vjs-no-js">JavaScript를 활성화해주세요.</p>
+            </video>
+        </div>
+
+        <!-- 상태 표시 -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-label">현재 시간:</span>
+                <span class="status-value" id="currentTime">0:00</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">전체 시간:</span>
+                <span class="status-value" id="duration">0:00</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">배속:</span>
+                <span class="status-value" id="currentSpeed">1.0x</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">최대 시청 위치:</span>
+                <span class="status-value" id="maxWatched">0:00</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Seeking 제한:</span>
+                <span class="status-value" id="seekStatus">OFF</span>
+            </div>
+        </div>
+
+        <!-- 컨트롤 패널 -->
+        <div class="control-panel">
+            <!-- 배속 설정 -->
+            <div class="control-section">
+                <h3>⚡ 배속 설정</h3>
+                <div class="speed-buttons">
+                    <button class="speed-btn" data-speed="0.5">0.5x</button>
+                    <button class="speed-btn" data-speed="0.75">0.75x</button>
+                    <button class="speed-btn active" data-speed="1">1.0x</button>
+                    <button class="speed-btn" data-speed="1.2">1.2x</button>
+                    <button class="speed-btn" data-speed="1.5">1.5x</button>
+                    <button class="speed-btn" data-speed="1.75">1.75x</button>
+                    <button class="speed-btn" data-speed="2">2.0x</button>
+                </div>
+            </div>
+
+            <!-- Seeking 제한 설정 -->
+            <div class="control-section">
+                <h3>🔒 Seeking 제한 설정</h3>
+                <div class="toggle-wrapper">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="seekRestrict" onchange="toggleSeekRestriction()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">앞으로 탐색 제한 (시청하지 않은 구간으로 이동 차단)</span>
+                </div>
+
+                <div class="seek-controls" style="margin-top: 15px;">
+                    <button class="seek-btn" onclick="testSeek(-10)">◀ 10초 뒤로</button>
+                    <button class="seek-btn allow" onclick="testSeek(10)">10초 앞으로 ▶</button>
+                    <button class="seek-btn" onclick="testSeek(-30)">◀ 30초 뒤로</button>
+                    <button class="seek-btn allow" onclick="testSeek(30)">30초 앞으로 ▶</button>
+                    <button class="seek-btn" onclick="seekToEnd()">끝으로 이동</button>
+                    <button class="seek-btn" onclick="resetMaxWatched()">시청 기록 초기화</button>
+                </div>
+            </div>
+
+            <!-- 모바일 전체화면 (iOS용) -->
+            <div class="control-section" id="mobileFullscreenSection" style="display:none;">
+                <h3>📱 모바일 전체화면</h3>
+                <p style="color:#888; font-size:13px; margin-bottom:10px;">iOS에서 Video.js 전체화면이 비활성화될 경우 아래 버튼 사용</p>
+                <button class="seek-btn allow" onclick="enterIOSFullscreen()" style="background:#00d4ff; color:#000;">
+                    📺 전체화면 (iOS)
+                </button>
+            </div>
+        </div>
+
+        <!-- 로그 -->
+        <div class="log-section">
+            <h3>📋 이벤트 로그</h3>
+            <div class="log-content" id="logContent"></div>
+        </div>
+    </div>
+
+    <!-- Video.js 라이브러리 -->
+    <script src="https://vjs.zencdn.net/7.8.2/video.min.js"></script>
+
+    <script>
+        // ========================================
+        // 플레이어 초기화
+        // ========================================
+        var player = null;
+        var maxWatchedTime = 0;        // 최대 시청 위치
+        var seekRestrictionEnabled = false;  // Seeking 제한 활성화 여부
+        var lastKnownTime = 0;         // 마지막 알려진 시간 (seeking 감지용)
+
+        // 샘플 비디오 URL
+        var sampleVideos = {
+            hls: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+            mp4: 'https://www.w3schools.com/html/mov_bbb.mp4',
+            project: 'http://210.107.66.66:1935/vod/_definst_/sample/playlist.m3u8'
+        };
+
+        // 플레이어 초기화
+        // 모바일 감지
+        var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        function initPlayer() {
+            player = videojs('my-player', {
+                controls: true,
+                autoplay: false,
+                preload: 'auto',
+                fluid: true,
+                playbackRates: [0.5, 0.75, 1, 1.2, 1.5, 1.75, 2],
+                // iOS 전체화면 지원
+                playsinline: !isIOS,  // iOS에서는 playsinline 비활성화하여 네이티브 전체화면 허용
+                html5: {
+                    vhs: {
+                        overrideNative: true
+                    },
+                    nativeAudioTracks: false,
+                    nativeVideoTracks: false,
+                    nativeFullscreen: isIOS  // iOS에서 네이티브 전체화면 사용
+                }
+            });
+
+            // 이벤트 리스너 등록
+            player.on('loadedmetadata', onLoadedMetadata);
+            player.on('timeupdate', onTimeUpdate);
+            player.on('seeking', onSeeking);
+            player.on('seeked', onSeeked);
+            player.on('ratechange', onRateChange);
+            player.on('play', function() { addLog('▶ 재생 시작', 'info'); });
+            player.on('pause', function() { addLog('⏸ 일시 정지', 'info'); });
+            player.on('ended', function() { addLog('⏹ 재생 완료', 'info'); });
+            player.on('error', function() { addLog('❌ 에러 발생: ' + player.error().message, 'blocked'); });
+
+            // iOS 전체화면 지원 (네이티브 fullscreen API 사용)
+            if (isIOS) {
+                var videoEl = player.tech().el();
+
+                // 전체화면 버튼 클릭 시 네이티브 전체화면 사용
+                player.on('fullscreenchange', function() {
+                    // Video.js fullscreen이 실패하면 네이티브 사용
+                    if (!player.isFullscreen() && videoEl.webkitEnterFullscreen) {
+                        try {
+                            videoEl.webkitEnterFullscreen();
+                        } catch(e) {
+                            addLog('iOS 전체화면 실패: ' + e.message, 'blocked');
+                        }
+                    }
+                });
+
+                // 커스텀 전체화면 함수
+                window.enterIOSFullscreen = function() {
+                    if (videoEl.webkitEnterFullscreen) {
+                        videoEl.webkitEnterFullscreen();
+                        addLog('iOS 네이티브 전체화면 진입', 'info');
+                    } else if (videoEl.webkitRequestFullscreen) {
+                        videoEl.webkitRequestFullscreen();
+                    }
+                };
+
+                addLog('iOS 감지됨 - 네이티브 전체화면 모드 활성화', 'info');
+            }
+
+            addLog('플레이어 초기화 완료 (Video.js 7.8.2)' + (isMobile ? ' [모바일]' : ''), 'info');
+        }
+
+        // ========================================
+        // 비디오 로드
+        // ========================================
+        function loadVideo() {
+            var url = document.getElementById('videoSource').value.trim();
+            if (!url) {
+                addLog('URL을 입력해주세요.', 'blocked');
+                return;
+            }
+
+            var type = url.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4';
+
+            player.src({
+                src: url,
+                type: type
+            });
+
+            // 초기화
+            maxWatchedTime = 0;
+            lastKnownTime = 0;
+            updateStatus();
+
+            addLog('비디오 로드: ' + url, 'info');
+        }
+
+        function loadSample(type) {
+            document.getElementById('videoSource').value = sampleVideos[type] || '';
+            loadVideo();
+        }
+
+        // ========================================
+        // 이벤트 핸들러
+        // ========================================
+        function onLoadedMetadata() {
+            updateStatus();
+            addLog('메타데이터 로드 완료 - 길이: ' + formatTime(player.duration()), 'info');
+        }
+
+        function onTimeUpdate() {
+            var currentTime = player.currentTime();
+
+            // 최대 시청 위치 업데이트 (정상 재생 시에만)
+            if (!player.seeking() && currentTime > maxWatchedTime) {
+                maxWatchedTime = currentTime;
+            }
+
+            lastKnownTime = currentTime;
+            updateStatus();
+        }
+
+        function onSeeking() {
+            var targetTime = player.currentTime();
+            addLog('Seeking 시도: ' + formatTime(lastKnownTime) + ' → ' + formatTime(targetTime), 'seeking');
+
+            // Seeking 제한이 활성화된 경우
+            if (seekRestrictionEnabled && targetTime > maxWatchedTime) {
+                // 시청하지 않은 구간으로 이동 시도 - 차단
+                addLog('⛔ Seeking 차단! 최대 시청 위치(' + formatTime(maxWatchedTime) + ')를 초과할 수 없습니다.', 'blocked');
+
+                // 최대 시청 위치로 되돌림
+                player.currentTime(maxWatchedTime);
+            }
+        }
+
+        function onSeeked() {
+            var currentTime = player.currentTime();
+            addLog('Seeking 완료: ' + formatTime(currentTime), 'info');
+        }
+
+        function onRateChange() {
+            var rate = player.playbackRate();
+            updateSpeedButtons(rate);
+            updateStatus();
+            addLog('배속 변경: ' + rate + 'x', 'speed');
+        }
+
+        // ========================================
+        // 배속 컨트롤
+        // ========================================
+        function updateSpeedButtons(rate) {
+            document.querySelectorAll('.speed-btn').forEach(function(btn) {
+                btn.classList.remove('active');
+                if (parseFloat(btn.dataset.speed) === rate) {
+                    btn.classList.add('active');
+                }
+            });
+            document.getElementById('currentSpeed').textContent = rate + 'x';
+        }
+
+        // 배속 버튼 클릭 이벤트
+        document.querySelectorAll('.speed-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var speed = parseFloat(this.dataset.speed);
+                if (player) {
+                    player.playbackRate(speed);
+                }
+            });
+        });
+
+        // ========================================
+        // Seeking 제한 토글
+        // ========================================
+        function toggleSeekRestriction() {
+            seekRestrictionEnabled = document.getElementById('seekRestrict').checked;
+            document.getElementById('seekStatus').textContent = seekRestrictionEnabled ? 'ON' : 'OFF';
+            document.getElementById('seekStatus').style.color = seekRestrictionEnabled ? '#e94560' : '#4caf50';
+            addLog('Seeking 제한: ' + (seekRestrictionEnabled ? '활성화' : '비활성화'), seekRestrictionEnabled ? 'blocked' : 'info');
+        }
+
+        // ========================================
+        // 테스트 함수
+        // ========================================
+        function testSeek(seconds) {
+            if (!player) return;
+            var targetTime = player.currentTime() + seconds;
+            if (targetTime < 0) targetTime = 0;
+            if (targetTime > player.duration()) targetTime = player.duration();
+            player.currentTime(targetTime);
+        }
+
+        function seekToEnd() {
+            if (!player) return;
+            player.currentTime(player.duration() - 1);
+        }
+
+        function resetMaxWatched() {
+            maxWatchedTime = 0;
+            lastKnownTime = 0;
+            updateStatus();
+            addLog('시청 기록 초기화됨', 'info');
+        }
+
+        // ========================================
+        // 유틸리티
+        // ========================================
+        function formatTime(seconds) {
+            if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
+            var mins = Math.floor(seconds / 60);
+            var secs = Math.floor(seconds % 60);
+            return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+
+        function updateStatus() {
+            if (!player) return;
+            document.getElementById('currentTime').textContent = formatTime(player.currentTime());
+            document.getElementById('duration').textContent = formatTime(player.duration());
+            document.getElementById('maxWatched').textContent = formatTime(maxWatchedTime);
+        }
+
+        function addLog(message, type) {
+            var logContent = document.getElementById('logContent');
+            var timestamp = new Date().toLocaleTimeString();
+            var logItem = document.createElement('div');
+            logItem.className = 'log-item ' + (type || '');
+            logItem.textContent = '[' + timestamp + '] ' + message;
+            logContent.insertBefore(logItem, logContent.firstChild);
+
+            // 최대 50개 로그 유지
+            while (logContent.children.length > 50) {
+                logContent.removeChild(logContent.lastChild);
+            }
+        }
+
+        // ========================================
+        // 초기화
+        // ========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initPlayer();
+
+            // 기본 샘플 로드
+            document.getElementById('videoSource').value = sampleVideos.hls;
+
+            // 모바일에서 전체화면 섹션 표시
+            if (isMobile) {
+                document.getElementById('mobileFullscreenSection').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

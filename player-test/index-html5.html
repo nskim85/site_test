@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>HTML5 Video Test - 모바일 WebView</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 5px;
+            color: #00d4ff;
+            font-size: 18px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+
+        .version {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        /* 플레이어 영역 */
+        .player-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: auto;
+            max-height: 300px;
+            display: block;
+        }
+
+        /* 컨트롤 패널 */
+        .control-panel {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .control-section {
+            margin-bottom: 12px;
+        }
+
+        .control-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-section h3 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+            font-size: 14px;
+            border-bottom: 1px solid #0f3460;
+            padding-bottom: 5px;
+        }
+
+        /* 버튼 그리드 */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .btn-grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .btn-grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .btn {
+            padding: 12px 8px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .btn-speed {
+            background: #0f3460;
+            color: #fff;
+        }
+
+        .btn-speed.active {
+            background: #00d4ff;
+            color: #000;
+        }
+
+        .btn-action {
+            background: #e94560;
+            color: #fff;
+        }
+
+        .btn-action.green {
+            background: #4caf50;
+        }
+
+        .btn-action.blue {
+            background: #00d4ff;
+            color: #000;
+        }
+
+        /* 상태 바 */
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            color: #888;
+            font-size: 11px;
+            display: block;
+        }
+
+        .status-value {
+            color: #00d4ff;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* 소스 입력 */
+        .source-section {
+            margin-bottom: 10px;
+        }
+
+        .source-btns {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .source-btn {
+            padding: 6px 12px;
+            background: #0f3460;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .source-input {
+            display: flex;
+            gap: 6px;
+        }
+
+        .source-input input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #0f3460;
+            background: #0f0f23;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .source-input button {
+            padding: 10px 16px;
+            background: #00d4ff;
+            border: none;
+            color: #000;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        /* 로그 */
+        .log-section {
+            background: #0f0f23;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 12px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .log-section h3 {
+            color: #00d4ff;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .log-content {
+            font-family: monospace;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        .log-item {
+            padding: 2px 0;
+            border-bottom: 1px solid #1a1a2e;
+        }
+
+        .log-item.info { color: #4caf50; }
+        .log-item.speed { color: #00d4ff; }
+        .log-item.seeking { color: #ffc107; }
+        .log-item.error { color: #e94560; }
+
+        /* 전체화면 스타일 */
+        .fullscreen-active {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 99999 !important;
+            background: #000 !important;
+            border-radius: 0 !important;
+        }
+
+        .fullscreen-active #videoPlayer {
+            width: 100% !important;
+            height: 100% !important;
+            max-height: 100% !important;
+            object-fit: contain !important;
+        }
+
+        .fullscreen-exit-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 100000;
+            padding: 10px 16px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            border: 2px solid #fff;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* 기기 정보 */
+        .device-info {
+            background: #0f3460;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .device-info span {
+            color: #00d4ff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HTML5 Video Test</h1>
+        <p class="subtitle">모바일 WebView 테스트 <span class="version">v1.0.0</span></p>
+
+        <!-- 기기 정보 -->
+        <div class="device-info">
+            기기: <span id="deviceType">-</span> |
+            화면: <span id="screenSize">-</span> |
+            Fullscreen API: <span id="fullscreenSupport">-</span>
+        </div>
+
+        <!-- 소스 입력 -->
+        <div class="control-panel">
+            <div class="source-section">
+                <div class="source-btns">
+                    <button class="source-btn" onclick="loadSample('hls')">HLS 샘플</button>
+                    <button class="source-btn" onclick="loadSample('mp4')">MP4 샘플</button>
+                    <button class="source-btn" onclick="loadSample('hana')" style="background:#e94560;">하나 HLS (내부망)</button>
+                </div>
+                <div class="source-input">
+                    <input type="text" id="videoSource" placeholder="비디오 URL 입력">
+                    <button onclick="loadVideo()">로드</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 플레이어 -->
+        <div class="player-wrapper" id="playerWrapper">
+            <video id="videoPlayer"
+                   controls
+                   playsinline
+                   webkit-playsinline
+                   preload="metadata">
+                <p>비디오를 지원하지 않는 브라우저입니다.</p>
+            </video>
+        </div>
+
+        <!-- 상태 바 -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-label">현재 시간</span>
+                <span class="status-value" id="currentTime">0:00</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">전체 시간</span>
+                <span class="status-value" id="duration">0:00</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">배속</span>
+                <span class="status-value" id="currentSpeed">1.0x</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">상태</span>
+                <span class="status-value" id="playState">대기</span>
+            </div>
+        </div>
+
+        <!-- 배속 컨트롤 -->
+        <div class="control-panel">
+            <div class="control-section">
+                <h3>배속 설정</h3>
+                <div class="btn-grid">
+                    <button class="btn btn-speed" data-speed="0.5">0.5x</button>
+                    <button class="btn btn-speed" data-speed="0.75">0.75x</button>
+                    <button class="btn btn-speed active" data-speed="1">1.0x</button>
+                    <button class="btn btn-speed" data-speed="1.25">1.25x</button>
+                    <button class="btn btn-speed" data-speed="1.5">1.5x</button>
+                    <button class="btn btn-speed" data-speed="1.75">1.75x</button>
+                    <button class="btn btn-speed" data-speed="2">2.0x</button>
+                    <button class="btn btn-speed" data-speed="2.5">2.5x</button>
+                </div>
+            </div>
+
+            <!-- 재생 컨트롤 -->
+            <div class="control-section">
+                <h3>재생 컨트롤</h3>
+                <div class="btn-grid btn-grid-3">
+                    <button class="btn btn-action" onclick="seekRelative(-10)">◀ 10초</button>
+                    <button class="btn btn-action green" onclick="togglePlay()">재생/정지</button>
+                    <button class="btn btn-action" onclick="seekRelative(10)">10초 ▶</button>
+                </div>
+            </div>
+
+            <!-- 전체화면 -->
+            <div class="control-section">
+                <h3>전체화면</h3>
+                <div class="btn-grid btn-grid-2">
+                    <button class="btn btn-action blue" onclick="enterFullscreen()">전체화면 진입</button>
+                    <button class="btn btn-action" onclick="exitFullscreen()">전체화면 종료</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 로그 -->
+        <div class="log-section">
+            <h3>이벤트 로그</h3>
+            <div class="log-content" id="logContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // 변수
+        // ========================================
+        var video = document.getElementById('videoPlayer');
+        var playerWrapper = document.getElementById('playerWrapper');
+        var isFullscreen = false;
+        var exitBtn = null;
+
+        var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        var isAndroid = /Android/i.test(navigator.userAgent);
+
+        var sampleVideos = {
+            hls: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+            mp4: 'https://www.w3schools.com/html/mov_bbb.mp4',
+            hana: 'http://210.107.66.36:1935/vod/_definst_/2019/2019319132039/2019319132039.mp4/playlist.m3u8'
+        };
+
+        // ========================================
+        // 초기화
+        // ========================================
+        function init() {
+            // 기기 정보 표시
+            var deviceType = isIOS ? 'iOS' : (isAndroid ? 'Android' : 'Desktop');
+            document.getElementById('deviceType').textContent = deviceType;
+            document.getElementById('screenSize').textContent = window.innerWidth + 'x' + window.innerHeight;
+
+            // Fullscreen API 지원 여부
+            var fsSupport = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled ||
+                              document.mozFullScreenEnabled || video.webkitEnterFullscreen);
+            document.getElementById('fullscreenSupport').textContent = fsSupport ? '지원' : '미지원';
+            document.getElementById('fullscreenSupport').style.color = fsSupport ? '#4caf50' : '#e94560';
+
+            // 이벤트 리스너
+            video.addEventListener('loadedmetadata', function() {
+                updateStatus();
+                addLog('메타데이터 로드 - 길이: ' + formatTime(video.duration), 'info');
+            });
+
+            video.addEventListener('timeupdate', updateStatus);
+
+            video.addEventListener('play', function() {
+                document.getElementById('playState').textContent = '재생중';
+                addLog('재생 시작', 'info');
+            });
+
+            video.addEventListener('pause', function() {
+                document.getElementById('playState').textContent = '일시정지';
+                addLog('일시 정지', 'info');
+            });
+
+            video.addEventListener('ended', function() {
+                document.getElementById('playState').textContent = '완료';
+                addLog('재생 완료', 'info');
+            });
+
+            video.addEventListener('ratechange', function() {
+                var rate = video.playbackRate;
+                updateSpeedButtons(rate);
+                addLog('배속 변경: ' + rate + 'x', 'speed');
+            });
+
+            video.addEventListener('seeking', function() {
+                addLog('Seeking: ' + formatTime(video.currentTime), 'seeking');
+            });
+
+            video.addEventListener('error', function() {
+                var err = video.error;
+                addLog('에러: ' + (err ? err.message : 'unknown'), 'error');
+            });
+
+            // 배속 버튼 이벤트
+            document.querySelectorAll('.btn-speed').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var speed = parseFloat(this.dataset.speed);
+                    video.playbackRate = speed;
+                });
+            });
+
+            // 화면 회전 감지
+            window.addEventListener('orientationchange', function() {
+                setTimeout(function() {
+                    document.getElementById('screenSize').textContent =
+                        window.innerWidth + 'x' + window.innerHeight;
+                    if (isFullscreen) {
+                        addLog('화면 회전 - 전체화면 유지', 'info');
+                    }
+                }, 100);
+            });
+
+            // 기본 소스 설정
+            document.getElementById('videoSource').value = sampleVideos.mp4;
+
+            addLog('HTML5 Video 초기화 완료 [' + deviceType + ']', 'info');
+        }
+
+        // ========================================
+        // 비디오 로드
+        // ========================================
+        function loadVideo() {
+            var url = document.getElementById('videoSource').value.trim();
+            if (!url) {
+                addLog('URL을 입력하세요', 'error');
+                return;
+            }
+
+            // HLS는 iOS Safari에서만 네이티브 지원
+            if (url.includes('.m3u8') && !isIOS) {
+                addLog('HLS는 iOS에서만 네이티브 지원. MP4 사용 권장', 'error');
+            }
+
+            video.src = url;
+            video.load();
+            document.getElementById('playState').textContent = '로딩';
+            addLog('비디오 로드: ' + url.substring(0, 40) + '...', 'info');
+        }
+
+        function loadSample(type) {
+            document.getElementById('videoSource').value = sampleVideos[type];
+            loadVideo();
+        }
+
+        // ========================================
+        // 재생 컨트롤
+        // ========================================
+        function togglePlay() {
+            if (video.paused) {
+                video.play().catch(function(e) {
+                    addLog('재생 실패: ' + e.message, 'error');
+                });
+            } else {
+                video.pause();
+            }
+        }
+
+        function seekRelative(seconds) {
+            var newTime = video.currentTime + seconds;
+            if (newTime < 0) newTime = 0;
+            if (newTime > video.duration) newTime = video.duration;
+            video.currentTime = newTime;
+        }
+
+        // ========================================
+        // 배속
+        // ========================================
+        function updateSpeedButtons(rate) {
+            document.querySelectorAll('.btn-speed').forEach(function(btn) {
+                btn.classList.remove('active');
+                if (parseFloat(btn.dataset.speed) === rate) {
+                    btn.classList.add('active');
+                }
+            });
+            document.getElementById('currentSpeed').textContent = rate + 'x';
+        }
+
+        // ========================================
+        // 전체화면
+        // ========================================
+        function enterFullscreen() {
+            addLog('전체화면 시도...', 'seeking');
+
+            // 1. iOS 네이티브 비디오 전체화면
+            if (video.webkitEnterFullscreen) {
+                try {
+                    video.webkitEnterFullscreen();
+                    addLog('iOS webkitEnterFullscreen 호출', 'info');
+                    return;
+                } catch(e) {
+                    addLog('iOS 전체화면 실패: ' + e.message, 'error');
+                }
+            }
+
+            // 2. 표준 Fullscreen API
+            var elem = playerWrapper;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().then(function() {
+                    isFullscreen = true;
+                    addLog('requestFullscreen 성공', 'info');
+                }).catch(function(e) {
+                    addLog('requestFullscreen 실패: ' + e.message, 'error');
+                    enterCSSFullscreen();
+                });
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+                isFullscreen = true;
+                addLog('webkitRequestFullscreen 호출', 'info');
+            } else if (elem.mozRequestFullScreen) {
+                elem.mozRequestFullScreen();
+                isFullscreen = true;
+                addLog('mozRequestFullScreen 호출', 'info');
+            } else {
+                // CSS 전체화면 폴백
+                enterCSSFullscreen();
+            }
+        }
+
+        function enterCSSFullscreen() {
+            playerWrapper.classList.add('fullscreen-active');
+            isFullscreen = true;
+
+            // 종료 버튼 추가
+            exitBtn = document.createElement('button');
+            exitBtn.className = 'fullscreen-exit-btn';
+            exitBtn.textContent = '✖ 전체화면 종료';
+            exitBtn.onclick = exitFullscreen;
+            document.body.appendChild(exitBtn);
+
+            addLog('CSS 전체화면 진입', 'info');
+        }
+
+        function exitFullscreen() {
+            // CSS 전체화면 종료
+            if (playerWrapper.classList.contains('fullscreen-active')) {
+                playerWrapper.classList.remove('fullscreen-active');
+                if (exitBtn) {
+                    exitBtn.remove();
+                    exitBtn = null;
+                }
+                isFullscreen = false;
+                addLog('CSS 전체화면 종료', 'info');
+                return;
+            }
+
+            // 네이티브 전체화면 종료
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            }
+            isFullscreen = false;
+            addLog('전체화면 종료', 'info');
+        }
+
+        // Fullscreen 변경 이벤트
+        document.addEventListener('fullscreenchange', function() {
+            isFullscreen = !!document.fullscreenElement;
+            addLog('전체화면 상태: ' + (isFullscreen ? 'ON' : 'OFF'), 'info');
+        });
+
+        document.addEventListener('webkitfullscreenchange', function() {
+            isFullscreen = !!document.webkitFullscreenElement;
+        });
+
+        // ========================================
+        // 유틸리티
+        // ========================================
+        function formatTime(seconds) {
+            if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
+            var mins = Math.floor(seconds / 60);
+            var secs = Math.floor(seconds % 60);
+            return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+
+        function updateStatus() {
+            document.getElementById('currentTime').textContent = formatTime(video.currentTime);
+            document.getElementById('duration').textContent = formatTime(video.duration);
+        }
+
+        function addLog(message, type) {
+            var logContent = document.getElementById('logContent');
+            var time = new Date().toLocaleTimeString();
+            var item = document.createElement('div');
+            item.className = 'log-item ' + (type || '');
+            item.textContent = '[' + time + '] ' + message;
+            logContent.insertBefore(item, logContent.firstChild);
+            while (logContent.children.length > 30) {
+                logContent.removeChild(logContent.lastChild);
+            }
+        }
+
+        // ========================================
+        // 시작
+        // ========================================
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

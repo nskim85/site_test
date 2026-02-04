@@ -334,18 +334,32 @@
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
             z-index: 99999 !important;
             background: #000 !important;
             margin: 0 !important;
             padding: 0 !important;
             border-radius: 0 !important;
+            overflow: hidden !important;
         }
 
         .fake-fullscreen .video-js {
-            width: 100vw !important;
-            height: 100vh !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+        }
+
+        .fake-fullscreen video {
+            object-fit: contain !important;
         }
 
         /* 가상 전체화면 종료 버튼 */
@@ -371,7 +385,7 @@
 <body>
     <div class="container">
         <h1>🎬 Video.js Player Test</h1>
-        <p class="subtitle">Seeking 제한 + 배속 기능 테스트 환경 <span style="color:#00d4ff;">v1.2.0</span></p>
+        <p class="subtitle">Seeking 제한 + 배속 기능 테스트 환경 <span style="color:#00d4ff;">v1.3.0</span></p>
 
         <!-- 비디오 소스 입력 -->
         <div class="control-panel" style="margin-bottom: 20px;">
@@ -380,7 +394,7 @@
                 <div class="sample-sources">
                     <button class="sample-btn" onclick="loadSample('hls')">샘플 HLS</button>
                     <button class="sample-btn" onclick="loadSample('mp4')">샘플 MP4</button>
-                    <button class="sample-btn" onclick="loadSample('project')">프로젝트 HLS</button>
+                    <button class="sample-btn" onclick="loadSample('hana')" style="background:#e94560;">하나 HLS (내부망)</button>
                 </div>
                 <div class="source-input">
                     <input type="text" id="videoSource" placeholder="HLS URL (m3u8) 또는 MP4 URL 입력">
@@ -495,7 +509,7 @@
         var sampleVideos = {
             hls: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
             mp4: 'https://www.w3schools.com/html/mov_bbb.mp4',
-            project: 'http://210.107.66.66:1935/vod/_definst_/sample/playlist.m3u8'
+            hana: 'http://210.107.66.36:1935/vod/_definst_/2019/2019319132039/2019319132039.mp4/playlist.m3u8'
         };
 
         // 플레이어 초기화
@@ -638,6 +652,24 @@
 
             if (isMobile) {
                 addLog((isIOS ? 'iOS' : 'Android') + ' 감지됨 - 커스텀 전체화면 버튼 사용', 'info');
+
+                // 화면 회전 시 가상 전체화면 유지
+                window.addEventListener('orientationchange', function() {
+                    if (isFakeFullscreen) {
+                        addLog('화면 회전 감지 - 전체화면 유지', 'seeking');
+                        // 약간의 딜레이 후 크기 재조정
+                        setTimeout(function() {
+                            player.dimensions('100%', '100%');
+                        }, 100);
+                    }
+                });
+
+                // resize 이벤트에서도 가상 전체화면 유지
+                window.addEventListener('resize', function() {
+                    if (isFakeFullscreen) {
+                        player.dimensions('100%', '100%');
+                    }
+                });
             }
 
             addLog('플레이어 초기화 완료 (Video.js 7.8.2)' + (isMobile ? ' [모바일]' : ''), 'info');

@@ -333,7 +333,7 @@
 <body>
     <div class="container">
         <h1>🎬 Video.js Player Test</h1>
-        <p class="subtitle">Seeking 제한 + 배속 기능 테스트 환경</p>
+        <p class="subtitle">Seeking 제한 + 배속 기능 테스트 환경 <span style="color:#00d4ff;">v1.1.0</span></p>
 
         <!-- 비디오 소스 입력 -->
         <div class="control-panel" style="margin-bottom: 20px;">
@@ -419,13 +419,18 @@
                 </div>
             </div>
 
-            <!-- 모바일 전체화면 (iOS용) -->
+            <!-- 모바일 전체화면 -->
             <div class="control-section" id="mobileFullscreenSection" style="display:none;">
                 <h3>📱 모바일 전체화면</h3>
-                <p style="color:#888; font-size:13px; margin-bottom:10px;">iOS에서 Video.js 전체화면이 비활성화될 경우 아래 버튼 사용</p>
-                <button class="seek-btn allow" onclick="enterIOSFullscreen()" style="background:#00d4ff; color:#000;">
-                    📺 전체화면 (iOS)
-                </button>
+                <p style="color:#888; font-size:13px; margin-bottom:10px;">Video.js 전체화면 버튼이 비활성화될 경우 아래 버튼 사용</p>
+                <div class="speed-buttons">
+                    <button class="seek-btn allow" onclick="enterMobileFullscreen()" style="background:#00d4ff; color:#000;">
+                        📺 전체화면 진입
+                    </button>
+                    <button class="seek-btn" onclick="exitMobileFullscreen()">
+                        ✖ 전체화면 종료
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -490,33 +495,60 @@
             player.on('ended', function() { addLog('⏹ 재생 완료', 'info'); });
             player.on('error', function() { addLog('❌ 에러 발생: ' + player.error().message, 'blocked'); });
 
-            // iOS 전체화면 지원 (네이티브 fullscreen API 사용)
-            if (isIOS) {
-                var videoEl = player.tech().el();
+            // 모바일 전체화면 지원
+            var videoEl = player.tech().el();
+            var playerContainer = document.querySelector('.player-wrapper');
 
-                // 전체화면 버튼 클릭 시 네이티브 전체화면 사용
-                player.on('fullscreenchange', function() {
-                    // Video.js fullscreen이 실패하면 네이티브 사용
-                    if (!player.isFullscreen() && videoEl.webkitEnterFullscreen) {
-                        try {
-                            videoEl.webkitEnterFullscreen();
-                        } catch(e) {
-                            addLog('iOS 전체화면 실패: ' + e.message, 'blocked');
-                        }
-                    }
-                });
+            // 커스텀 전체화면 함수 (iOS/Android 모두 지원)
+            window.enterMobileFullscreen = function() {
+                addLog('전체화면 시도...', 'info');
 
-                // 커스텀 전체화면 함수
-                window.enterIOSFullscreen = function() {
-                    if (videoEl.webkitEnterFullscreen) {
+                // 1. iOS 네이티브 비디오 전체화면
+                if (videoEl.webkitEnterFullscreen) {
+                    try {
                         videoEl.webkitEnterFullscreen();
-                        addLog('iOS 네이티브 전체화면 진입', 'info');
-                    } else if (videoEl.webkitRequestFullscreen) {
-                        videoEl.webkitRequestFullscreen();
+                        addLog('iOS webkitEnterFullscreen 성공', 'info');
+                        return;
+                    } catch(e) {
+                        addLog('iOS 전체화면 실패: ' + e.message, 'blocked');
                     }
-                };
+                }
 
-                addLog('iOS 감지됨 - 네이티브 전체화면 모드 활성화', 'info');
+                // 2. 표준 Fullscreen API (Android Chrome 등)
+                var elem = playerContainer || videoEl;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().then(function() {
+                        addLog('requestFullscreen 성공', 'info');
+                    }).catch(function(e) {
+                        addLog('requestFullscreen 실패: ' + e.message, 'blocked');
+                    });
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                    addLog('webkitRequestFullscreen 호출', 'info');
+                } else if (elem.mozRequestFullScreen) {
+                    elem.mozRequestFullScreen();
+                    addLog('mozRequestFullScreen 호출', 'info');
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                    addLog('msRequestFullscreen 호출', 'info');
+                } else {
+                    addLog('전체화면 API 미지원', 'blocked');
+                }
+            };
+
+            // 전체화면 종료 함수
+            window.exitMobileFullscreen = function() {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                }
+            };
+
+            if (isMobile) {
+                addLog((isIOS ? 'iOS' : 'Android') + ' 감지됨 - 커스텀 전체화면 버튼 사용', 'info');
             }
 
             addLog('플레이어 초기화 완료 (Video.js 7.8.2)' + (isMobile ? ' [모바일]' : ''), 'info');

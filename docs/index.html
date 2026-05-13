@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>hanaw v2.1 설치</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 32px 24px;
+            max-width: 360px;
+            width: 100%;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            text-align: center;
+        }
+        .icon {
+            width: 96px;
+            height: 96px;
+            border-radius: 22px;
+            margin: 0 auto 16px;
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 36px;
+            font-weight: 700;
+        }
+        h1 {
+            font-size: 22px;
+            margin: 0 0 4px;
+        }
+        .ver {
+            color: #6e6e73;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        a.install {
+            display: block;
+            background: #007aff;
+            color: #fff;
+            text-decoration: none;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+        }
+        a.install:active { background: #0062cc; }
+        .note {
+            font-size: 12px;
+            color: #6e6e73;
+            margin-top: 20px;
+            line-height: 1.5;
+            text-align: left;
+        }
+        .step {
+            background: #f5f5f7;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #1d1d1f;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">H</div>
+        <h1>hanaw</h1>
+        <div class="ver">버전 2.1 (Enterprise)</div>
+
+        <a class="install" href="itms-services://?action=download-manifest&url=https://nskim85.github.io/site_test/manifest.plist">
+            설치하기
+        </a>
+
+        <div class="note">
+            <strong>iPhone Safari에서만 동작합니다.</strong>
+            <div class="step">1. 위 버튼을 탭하면 설치 확인 창이 뜹니다.</div>
+            <div class="step">2. 설치 후 첫 실행 시 "신뢰되지 않은 개발자" 경고가 뜨면<br>
+                <b>설정 → 일반 → VPN 및 기기 관리 → Hana Securities Co., Ltd.</b>를 탭해 신뢰하세요.
+            </div>
+        </div>
+    </div>
+</body>
+</html>
